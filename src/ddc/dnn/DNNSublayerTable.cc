@@ -51,7 +51,8 @@ namespace inet
         }
         else{
             if (this->routing_table[string_route_id] != next_computing_layer_node) {
-                throw runtime_error(string_route_id + "already exists. But next_computing_layer_node is different.");
+//                throw runtime_error(string_route_id + "already exists. But next_computing_layer_node is different.");
+                cout << "Ignore resending." << endl;
             }
         }
     }

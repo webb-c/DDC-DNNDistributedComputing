@@ -12,7 +12,7 @@ namespace inet
     DNNID::DNNID() : DNNID::DNNID("model_1", "agent_1", 0.0, -1){
     }
 
-    DNNID::DNNID(string dnn_model_name, string agent_name, double start_simulation_time, int dnn_identifier){
+    DNNID::DNNID(string dnn_model_name, string agent_name, double start_simulation_time, double dnn_identifier){
         this->dnn_model_name = dnn_model_name;
         this->agent_name = agent_name;
         this->start_simulation_time = start_simulation_time;

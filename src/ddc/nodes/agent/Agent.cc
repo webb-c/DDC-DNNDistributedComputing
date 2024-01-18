@@ -157,7 +157,7 @@ void Agent::handleAction() {
 void Agent::handleRoute() {
     double start_simulation_time = simTime().dbl();
 
-    DNNID dnn_id = DNNID(this->model_name, this->agent_name, start_simulation_time, this->dnn_identifier++);
+    DNNID dnn_id = DNNID(this->model_name, this->agent_name, start_simulation_time, simTime().dbl());
     DNNInformation *dnn_information = new DNNInformation(dnn_id, this->src_layer_node, this->dst_layer_node);
 
     Route *route = returnRouteMessage(dnn_information);

@@ -1,0 +1,4 @@
+simulations/ini/results
+out
+src/*.exe
+Makefile

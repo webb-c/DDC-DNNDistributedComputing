@@ -210,6 +210,8 @@ void Agent::handleReset() {
 
     sendMessageToControlPlane(reset_message);
 
+    this->dnn_identifier = 0;
+
     scheduleAt(simTime() + this->skip_length, new cMessage("wait_for_RL"));
 }
 

@@ -1,0 +1,3 @@
+package simulations;
+
+@namespace(inet);

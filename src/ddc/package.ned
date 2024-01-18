@@ -1,0 +1,3 @@
+package ddc;
+
+@namespace(inet);

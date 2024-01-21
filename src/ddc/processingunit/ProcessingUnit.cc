@@ -40,6 +40,7 @@ void ProcessingUnit::handleMessageWhenUp(cMessage *msg) {
     }
     else if (strcmp(msg->getFullName(), "reset") == 0){
         handleResetMessage();
+        delete msg;
     }
 }
 
@@ -102,14 +103,10 @@ void ProcessingUnit::handleComputeMessage(cMessage *msg){
 }
 
 void ProcessingUnit::handleCanComputeMessage(cMessage *msg){
-    this->busy = false;
-
     if (!this->message_queue.empty()) {
         cMessage *msg = dequeueMessage();
         scheduleAt(simTime(), msg);
     }
-
-//    delete msg;
 }
 
 void ProcessingUnit::handleResetMessage() {

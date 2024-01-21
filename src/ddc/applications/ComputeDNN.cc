@@ -108,7 +108,7 @@ void ComputeDNN::initLayerNodePair() {
 
             LayerNodePair laye_node_pair = LayerNodePair(my_layer_node, neighbor_layer_node);
 
-            this->links.push_back(laye_node_pair);
+            this->virtual_links.push_back(laye_node_pair);
         }
     }
     for (int depth = 1; depth < this->layer_depth; depth++) {
@@ -117,24 +117,39 @@ void ComputeDNN::initLayerNodePair() {
 
         LayerNodePair laye_node_pair = LayerNodePair(layer_node, layer_node_next_layer);
 
-        this->links.push_back(laye_node_pair);
+        this->virtual_links.push_back(laye_node_pair);
     }
 }
 
 void ComputeDNN::initVirtualQueue() {
-    for (LayerNodePair link : this->links) {
+    for (LayerNodePair link : this->virtual_links) {
         this->virtual_backlog.addVirtualBacklog(link);
     }
 }
 
 void ComputeDNN::initRecorder() {
     // init virtual queue recorder of all layer nodes
-    for (LayerNodePair link : this->links) {
+    for (LayerNodePair virtual_link : this->virtual_links) {
         cOutVector *virtual_queue_recorder = new cOutVector();
-        virtual_queue_recorder->setName(link.toString().c_str());
+        virtual_queue_recorder->setName(("2. layer node virtual backlog: " + virtual_link.toString()).c_str());
 
-        this->virtual_queue_recorder_table[link] = virtual_queue_recorder;
+        this->layer_node_virtual_queue_recorder_table[virtual_link] = virtual_queue_recorder;
     }
+
+    // init virtual queue recorder of all nodes
+    for (string dest_string : this->dest_addresses_str) {
+        string recorder_name = this->node_name + "->" + dest_string;
+        cOutVector *virtual_queue_recorder = new cOutVector();
+        virtual_queue_recorder->setName(("1. node virtual backlog: " + recorder_name).c_str());
+
+        this->node_virtual_queue_recorder_table[dest_string] = virtual_queue_recorder;
+    }
+
+    string recorder_name = this->node_name + "->" + this->node_name;
+    cOutVector *virtual_queue_recorder = new cOutVector();
+    virtual_queue_recorder->setName(("1. node virtual backlog: " + recorder_name).c_str());
+
+    this->node_virtual_queue_recorder_table[this->node_name] = virtual_queue_recorder;
 
     // init ene to end latency recorder
     this->end_to_end_latency_recorder = new cOutVector();
@@ -287,7 +302,7 @@ void ComputeDNN::handleRequestInformationMessage() {
 
     string temp = "";
 
-    for (LayerNodePair link : this->links) {
+    for (LayerNodePair link : this->virtual_links) {
         links_information[link] = this->virtual_backlog.getBacklogLengthByLayerNodePair(link);
         temp += link.toString() + to_string(links_information[link]);
     }
@@ -329,16 +344,32 @@ void ComputeDNN::start() {
 }
 
 void ComputeDNN::recordVirtualQueue() {
-    if (this->virtual_queue_recorder_table.size() == 0){
-        throw "Please initialize virtual_queue_recorder_table first.";
+    if (this->layer_node_virtual_queue_recorder_table.size() == 0){
+        throw runtime_error("Please initialize virtual_queue_recorder_table first.");
     }
     else {
-        for (LayerNodePair link : this->links) {
-            double virtual_backlog = this->virtual_backlog.getBacklogLengthByLayerNodePair(link);
+        map<string, double> node_virtual_backlogs;
 
-            cOutVector *virtual_queue_recorder = this->virtual_queue_recorder_table[link];
-            virtual_queue_recorder->record(virtual_backlog);
+        for (LayerNodePair virtual_link : this->virtual_links) {
+            double layer_node_virtual_backlog = this->virtual_backlog.getBacklogLengthByLayerNodePair(virtual_link);
+
+            cOutVector *layer_node_virtual_queue_recorder = this->layer_node_virtual_queue_recorder_table[virtual_link];
+            layer_node_virtual_queue_recorder->record(layer_node_virtual_backlog);
+
+            node_virtual_backlogs[virtual_link.getDstLayerNode().toNodeName()] += layer_node_virtual_backlog;
         }
+
+        for (string dest_string : this->dest_addresses_str) {
+            double node_virtual_backlog = node_virtual_backlogs.at(dest_string);
+
+            cOutVector *node_virtual_queue_recorder = this->node_virtual_queue_recorder_table[dest_string];
+            node_virtual_queue_recorder->record(node_virtual_backlog);
+        }
+
+        double node_virtual_backlog = node_virtual_backlogs.at(this->node_name);
+
+        cOutVector *node_virtual_queue_recorder = this->node_virtual_queue_recorder_table[this->node_name];
+        node_virtual_queue_recorder->record(node_virtual_backlog);
     }
 }
 

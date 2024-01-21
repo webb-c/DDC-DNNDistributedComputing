@@ -17,7 +17,7 @@ namespace inet {
     }
 
     string LayerNodePair::toString() const {
-        return "LayerNodePair(" + this->src_layer_node.toString() + ", " + this->dst_layer_node.toString() + ")";
+        return this->src_layer_node.toString() + "->" + this->dst_layer_node.toString();
     }
 
     LayerNode LayerNodePair::getSrcLayerNode() const{

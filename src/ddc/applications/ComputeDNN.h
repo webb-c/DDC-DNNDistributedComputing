@@ -56,7 +56,8 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
     string START_DELIMITER = "<send>";
     string END_DELIMITER = ">send<";
 
-    map<LayerNodePair, cOutVector *> virtual_queue_recorder_table;
+    map<LayerNodePair, cOutVector *> layer_node_virtual_queue_recorder_table;
+    map<string, cOutVector *> node_virtual_queue_recorder_table;
     cOutVector *end_to_end_latency_recorder;
     UdpSocket socket;
     TcpSocket tcp_socket;
@@ -76,7 +77,7 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
     int node_index;
     string node_name;
     vector<LayerNode> layer_node_vector;
-    vector<LayerNodePair> links;
+    vector<LayerNodePair> virtual_links;
 
     PhysicalBacklog physical_backlog;
     VirtualBacklog virtual_backlog;
@@ -146,7 +147,7 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
     double getQueueLengthByLayerNodePair(LayerNodePair link);
 
     string getNodeName() { return this->node_name; }
-    vector<LayerNodePair> getLinks() { return this->links; }
+    vector<LayerNodePair> getLinks() { return this->virtual_links; }
 
     VirtualBacklog getVirtualBacklog() { return this->virtual_backlog; }
 };

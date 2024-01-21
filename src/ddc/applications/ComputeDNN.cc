@@ -38,7 +38,7 @@ void ComputeDNN::init() {
     parseAddress();
     initLayerNodeOfMe();
     initLayerNodePair();
-    initVirtualQueue();
+    initQueue();
     initRecorder();
     initProcessingUnit();
 }
@@ -121,10 +121,21 @@ void ComputeDNN::initLayerNodePair() {
     }
 }
 
+void ComputeDNN::initQueue() {
+    initVirtualQueue();
+    initPhysicalQueue();
+}
+
 void ComputeDNN::initVirtualQueue() {
     for (LayerNodePair link : this->virtual_links) {
-        this->virtual_backlog.addVirtualBacklog(link);
+        this->virtual_queue.addVirtualQueue(link);
     }
+}
+
+void ComputeDNN::initPhysicalQueue() {
+    PacketQueue *link_packet_queue = dynamic_cast<PacketQueue *>(this->getParentModule()->getSubmodule("wlan", 0)->getSubmodule("queue"));
+
+    this->physical_queue.initLinkPhysicalQueue(link_packet_queue);
 }
 
 void ComputeDNN::initRecorder() {
@@ -150,6 +161,13 @@ void ComputeDNN::initRecorder() {
     virtual_queue_recorder->setName(("1. node virtual backlog: " + recorder_name).c_str());
 
     this->node_virtual_queue_recorder_table[this->node_name] = virtual_queue_recorder;
+
+    // init virtual queue recorder
+    recorder_name = this->node_name;
+    cOutVector *physical_queue_recorder = new cOutVector();
+    physical_queue_recorder->setName(("3. node physical backlog: " + recorder_name).c_str());
+
+    this->node_physical_queue_recorder = physical_queue_recorder;
 
     // init ene to end latency recorder
     this->end_to_end_latency_recorder = new cOutVector();
@@ -233,9 +251,9 @@ void ComputeDNN::handleScheduleMessage(Schedule *msg) {
     }
     else{
         this->dnn_sublayer_table.registerDNNRoute(dnn_sublayer.routeIDToString(), dnn_sublayer.getNextComputingLayerNode());
-        this->virtual_backlog.pushDNNSublayerToVirtualBacklogByLayerNodePair(dnn_sublayer, layer_node_pair);
+        this->virtual_queue.pushDNNSublayerToVirtualQueueByLayerNodePair(dnn_sublayer, layer_node_pair);
 
-        recordVirtualQueue();
+        recordQueue();
 
         // register route table and virtual backlog -> wait for precedence DNNOutput
         for (ComputeFinish *compute_finish_message : this->dnn_output_vector) {
@@ -269,8 +287,8 @@ void ComputeDNN::handleComputeFinishMessage(ComputeFinish *msg) {
         LayerNode next_node = this->dnn_sublayer_table.popNextLayerNodeByRouteID(dnn_output->routeIDToString());
         LayerNodePair layer_node_pair = LayerNodePair(current_node, next_node);
 
-        DNNSublayer dnn_sublayer = this->virtual_backlog.popDNNSublayerToVirtualBacklogByLayerNodePair(*dnn_output, layer_node_pair);
-        recordVirtualQueue();
+        DNNSublayer dnn_sublayer = this->virtual_queue.popDNNSublayerToVirtualQueueByLayerNodePair(*dnn_output, layer_node_pair);
+        recordQueue();
 
         sendDNNSublayerToNextLayerNode(dnn_sublayer, layer_node_pair);
         delete msg;
@@ -303,7 +321,7 @@ void ComputeDNN::handleRequestInformationMessage() {
     string temp = "";
 
     for (LayerNodePair link : this->virtual_links) {
-        links_information[link] = this->virtual_backlog.getBacklogLengthByLayerNodePair(link);
+        links_information[link] = this->virtual_queue.getQueueLengthByLayerNodePair(link);
         temp += link.toString() + to_string(links_information[link]);
     }
 
@@ -330,9 +348,9 @@ Packet *ComputeDNN::returnResponseNodeInformationMessage(NodeInformation &node_i
 void ComputeDNN::reset() {
     EV << "reset compute dnn";
     this->is_reset = true;
-    this->virtual_backlog.resetVirtualBacklog();
+    this->virtual_queue.resetVirtualQueue();
     initVirtualQueue();
-    recordVirtualQueue();
+    recordQueue();
 
     cMessage* reset_msg = new cMessage("reset");
     sendDirect(reset_msg, this->processing_unit, "dataIn");
@@ -343,6 +361,11 @@ void ComputeDNN::start() {
     this->is_reset = false;
 }
 
+void ComputeDNN::recordQueue() {
+    recordVirtualQueue();
+    recordPysicalQueue();
+}
+
 void ComputeDNN::recordVirtualQueue() {
     if (this->layer_node_virtual_queue_recorder_table.size() == 0){
         throw runtime_error("Please initialize virtual_queue_recorder_table first.");
@@ -351,7 +374,7 @@ void ComputeDNN::recordVirtualQueue() {
         map<string, double> node_virtual_backlogs;
 
         for (LayerNodePair virtual_link : this->virtual_links) {
-            double layer_node_virtual_backlog = this->virtual_backlog.getBacklogLengthByLayerNodePair(virtual_link);
+            double layer_node_virtual_backlog = this->virtual_queue.getQueueLengthByLayerNodePair(virtual_link);
 
             cOutVector *layer_node_virtual_queue_recorder = this->layer_node_virtual_queue_recorder_table[virtual_link];
             layer_node_virtual_queue_recorder->record(layer_node_virtual_backlog);
@@ -370,6 +393,16 @@ void ComputeDNN::recordVirtualQueue() {
 
         cOutVector *node_virtual_queue_recorder = this->node_virtual_queue_recorder_table[this->node_name];
         node_virtual_queue_recorder->record(node_virtual_backlog);
+    }
+}
+
+void ComputeDNN::recordPysicalQueue() {
+    if (!this->physical_queue.isPhysicalQueueExist()) {
+        throw runtime_error("Please initialize physical_queue first.");
+    }
+    else {
+        double node_physical_backlog = this->physical_queue.getQueueLength() + this->processing_unit->getComputingQueueLength();
+        this->node_physical_queue_recorder->record(node_physical_backlog);
     }
 }
 
@@ -452,7 +485,7 @@ const DNNOutput *ComputeDNN::peekDNNOutputFromComputeFinish(ComputeFinish *msg) 
 }
 
 double ComputeDNN::getQueueLengthByLayerNodePair(LayerNodePair link) {
-    return this->virtual_backlog.getBacklogLengthByLayerNodePair(link);
+    return this->virtual_queue.getQueueLengthByLayerNodePair(link);
 }
 
 void ComputeDNN::socketAvailable(TcpSocket *socket, TcpAvailableInfo *available_info) {

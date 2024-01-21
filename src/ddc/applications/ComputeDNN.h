@@ -20,8 +20,9 @@
 #include "inet/common/socket/SocketMap.h"
 #include "inet/common/ModuleAccess.h"
 #include "inet/common/packet/Packet.h"
-#include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/common/packet/chunk/Chunk.h"
+#include "inet/networklayer/common/L3AddressResolver.h"
+#include "inet/queueing/queue/PacketQueue.h"
 
 #include "ddc/processingunit/ProcessingUnit.h"
 
@@ -30,8 +31,8 @@
 #include "ddc/dnn/DNNSublayer.h"
 #include "ddc/dnn/DNNOutput.h"
 #include "ddc/dnn/DNNSublayerConfig.h"
-#include "ddc/backlog/PhysicalBacklog.h"
-#include "ddc/backlog/VirtualBacklog.h"
+#include "ddc/queue/PhysicalQueue.h"
+#include "ddc/queue/VirtualQueue.h"
 #include "ddc/dnn/DNNSublayerFactory.h"
 #include "ddc/dnn/DNNSublayerTable.h"
 
@@ -43,6 +44,7 @@
 
 using namespace std;
 using namespace omnetpp;
+using namespace inet::queueing;
 
 namespace inet {
 
@@ -58,6 +60,7 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
 
     map<LayerNodePair, cOutVector *> layer_node_virtual_queue_recorder_table;
     map<string, cOutVector *> node_virtual_queue_recorder_table;
+    cOutVector *node_physical_queue_recorder;
     cOutVector *end_to_end_latency_recorder;
     UdpSocket socket;
     TcpSocket tcp_socket;
@@ -79,8 +82,8 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
     vector<LayerNode> layer_node_vector;
     vector<LayerNodePair> virtual_links;
 
-    PhysicalBacklog physical_backlog;
-    VirtualBacklog virtual_backlog;
+    PhysicalQueue physical_queue;
+    VirtualQueue virtual_queue;
     DNNSublayerFactory dnn_sublayer_factory;
     DNNSublayerTable dnn_sublayer_table;
     vector<ComputeFinish *> dnn_output_vector;
@@ -92,7 +95,9 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
     void parseAddress();
     void initLayerNodeOfMe();
     void initLayerNodePair();
+    void initQueue();
     void initVirtualQueue();
+    void initPhysicalQueue();
     void initRecorder();
     void initProcessingUnit();
     void initTcpSockets();
@@ -120,7 +125,9 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
     void reset();
     void start();
 
+    void recordQueue();
     void recordVirtualQueue();
+    void recordPysicalQueue();
     void recordEndToEndLatency(double latency);
 
     virtual void socketDataArrived(TcpSocket *socket, Packet *packet, bool urgent) override;
@@ -148,8 +155,6 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
 
     string getNodeName() { return this->node_name; }
     vector<LayerNodePair> getLinks() { return this->virtual_links; }
-
-    VirtualBacklog getVirtualBacklog() { return this->virtual_backlog; }
 };
 
 } //namespace inet

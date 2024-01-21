@@ -40,6 +40,7 @@ void ProcessingUnit::handleMessageWhenUp(cMessage *msg) {
     }
     else if (strcmp(msg->getFullName(), "reset") == 0){
         handleResetMessage();
+        delete msg;
     }
 }
 
@@ -73,8 +74,6 @@ void ProcessingUnit::computeDNNSublayerAndsendDNNOutput(){
     DNNOutput *dnn_output = this->dnn_output.deepcopy();
     compute_finish_message->setDnn_output(dnn_output);
 
-    this->busy = true;
-
     sendDirect(compute_finish_message, 0, this->compute_time, this->compute_dnn_application, "dataIn");
     scheduleAt(simTime() + this->compute_time, this->can_compute_message);
 }
@@ -102,14 +101,10 @@ void ProcessingUnit::handleComputeMessage(cMessage *msg){
 }
 
 void ProcessingUnit::handleCanComputeMessage(cMessage *msg){
-    this->busy = false;
-
     if (!this->message_queue.empty()) {
         cMessage *msg = dequeueMessage();
         scheduleAt(simTime(), msg);
     }
-
-//    delete msg;
 }
 
 void ProcessingUnit::handleResetMessage() {
@@ -138,7 +133,6 @@ cMessage *ProcessingUnit::dequeueMessage(){
 }
 
 bool ProcessingUnit::isBusy(){
-//    return this->busy;
     return this->can_compute_message->isScheduled();
 }
 

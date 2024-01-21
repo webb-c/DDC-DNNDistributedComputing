@@ -41,7 +41,6 @@ class ProcessingUnit : public ApplicationBase, public UdpSocket::ICallback
     double compute_capacity;
 
     cMessage *can_compute_message = new cMessage("can_compute");
-    bool busy = false;
 
     cModule* compute_dnn_application;
     cMessage *msg;

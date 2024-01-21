@@ -35,6 +35,8 @@ void Agent::init() {
     initSrcDstLayerNode();
     initNodeName();
     initVariable();
+
+    scheduleAt(simTime(), this->wait_for_rl_message);
 }
 
 void Agent::parseAddress(){
@@ -95,6 +97,7 @@ void Agent::initNodeName() {
 
 void Agent::initVariable() {
     this->dnn_identifier = 0;
+    this->wait_for_rl_message = new cMessage("wait_for_RL");
 }
 
 void Agent::handleMessageWhenUp(cMessage *msg) {
@@ -127,7 +130,10 @@ void Agent::handleMessageWhenUp(cMessage *msg) {
         handleRoute();
     }
 
-    delete msg;
+    if (!(strcmp(msg->getName(), "wait_for_RL") == 0)) {
+        delete msg;
+    }
+    
 }
 
 Route *Agent::returnRouteMessage(DNNInformation *dnn_information) {
@@ -147,8 +153,6 @@ void Agent::handleAction() {
     this->communicator.sendPythonMessage("ACK");
     string action = this->communicator.getPythonMessage();
 
-    EV << "action is " << action << endl;
-
     double skip_time = stof(action);
 
     scheduleAt(simTime() + skip_time, new cMessage("route"));
@@ -163,7 +167,9 @@ void Agent::handleRoute() {
     Route *route = returnRouteMessage(dnn_information);
     sendMessageToControlPlane(route);
 
-    scheduleAt(simTime(), new cMessage("wait_for_RL"));
+    if (!this->wait_for_rl_message->isScheduled()) {
+        scheduleAt(simTime(), this->wait_for_rl_message);
+    }
 }
 
 void Agent::handleReward() {
@@ -189,12 +195,14 @@ void Agent::handleResponseArrivalRate(ResponseArrivalRate *response_arrival_rate
     double arrival_rate = response_arrival_rate->getArrival_rate();
     this->communicator.sendPythonMessage(to_string(arrival_rate));
 
-    scheduleAt(simTime(), new cMessage("wait_for_RL"));
-
     string return_message = this->communicator.getPythonMessage();      // ACK
     if(return_message.compare(ACK) != 0){
         EV << "error in reward " << return_message << endl;
         return;
+    }
+
+    if (!this->wait_for_rl_message->isScheduled()) {
+        scheduleAt(simTime(), this->wait_for_rl_message);
     }
 }
 
@@ -212,7 +220,7 @@ void Agent::handleReset() {
 
     this->dnn_identifier = 0;
 
-    scheduleAt(simTime() + this->skip_length, new cMessage("wait_for_RL"));
+    scheduleAt(simTime() + this->skip_length, this->wait_for_rl_message);
 }
 
 void Agent::handleStart() {
@@ -248,9 +256,7 @@ void Agent::socketDataArrived(UdpSocket *socket, Packet *packet) {}
 void Agent::socketErrorArrived(UdpSocket *socket, Indication *indication) {}
 void Agent::socketClosed(UdpSocket *socket) {}
 
-void Agent::handleStartOperation(LifecycleOperation *operation) {
-    scheduleAt(simTime(), new cMessage("wait_for_RL"));
-}
+void Agent::handleStartOperation(LifecycleOperation *operation) {}
 void Agent::handleStopOperation(LifecycleOperation *operation) {}
 void Agent::handleCrashOperation(LifecycleOperation *operation) {}
 

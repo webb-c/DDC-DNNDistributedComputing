@@ -30,7 +30,7 @@
 #include "ddc/dnn/DNNSublayerTable.h"
 #include "ddc/dnn/DNNInformation.h"
 #include "ddc/dnn/DNNSublayerConfigFactory.h"
-#include "ddc/backlog/VirtualBacklog.h"
+#include "ddc/queue/VirtualQueue.h"
 #include "ddc/layernode/LayerNodePairPath.h"
 #include "ddc/layeredgraph/LayeredGraph.h"
 #include "ddc/layeredgraph/algorithm/Dijkstra.h"

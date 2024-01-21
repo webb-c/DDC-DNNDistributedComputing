@@ -52,6 +52,8 @@ class Agent : public ApplicationBase, public UdpSocket::ICallback
   private:
     enum SelfMsgKinds { START = 1, SEND, STOP };
 
+    cMessage* wait_for_rl_message;
+
     UdpSocket socket;
     int local_port = -1; // Local port
     int dest_port = -1;  // Destination port

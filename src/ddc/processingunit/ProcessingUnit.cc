@@ -74,8 +74,6 @@ void ProcessingUnit::computeDNNSublayerAndsendDNNOutput(){
     DNNOutput *dnn_output = this->dnn_output.deepcopy();
     compute_finish_message->setDnn_output(dnn_output);
 
-    this->busy = true;
-
     sendDirect(compute_finish_message, 0, this->compute_time, this->compute_dnn_application, "dataIn");
     scheduleAt(simTime() + this->compute_time, this->can_compute_message);
 }
@@ -135,7 +133,6 @@ cMessage *ProcessingUnit::dequeueMessage(){
 }
 
 bool ProcessingUnit::isBusy(){
-//    return this->busy;
     return this->can_compute_message->isScheduled();
 }
 

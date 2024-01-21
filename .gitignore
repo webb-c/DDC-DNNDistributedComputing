@@ -2,3 +2,4 @@ simulations/ini/results
 out
 src/*.exe
 Makefile
+.settings/language.settings.xml

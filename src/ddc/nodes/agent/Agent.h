@@ -50,7 +50,8 @@ string ACK("ACK");
 class Agent : public ApplicationBase, public UdpSocket::ICallback
 {
   private:
-    enum SelfMsgKinds { START = 1, SEND, STOP };
+    enum agent_state_index { ACTION_STATE = 0, REWARD_STATE, FINISH_STATE };
+    bool agent_state[3] = {false};
 
     cMessage* wait_for_rl_message;
 

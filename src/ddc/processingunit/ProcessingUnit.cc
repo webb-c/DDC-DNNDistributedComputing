@@ -59,7 +59,7 @@ void ProcessingUnit::loadComputeAndSublayer() {
 }
 
 void ProcessingUnit::loadCompute(){
-    this->compute_packet = dynamic_cast<Compute *>(msg);
+    this->compute_packet = dynamic_cast<Compute *>(this->msg);
 }
 
 void ProcessingUnit::loadSublayer() {
@@ -118,10 +118,17 @@ void ProcessingUnit::reset() {
 
     while (!this->message_queue.empty()) {
         cMessage *msg = dequeueMessage();
+        delete msg;
     }
+
+    this->computing_queue_length = 0;
 }
 
 void ProcessingUnit::enqueueMessage(cMessage *msg){
+    Compute *compute_packet = dynamic_cast<Compute *>(msg);
+    double computing_size = compute_packet->getDnn_sublayer()->getComputingSize();
+    this->computing_queue_length += computing_size;
+
     this->message_queue.push(msg);
 }
 
@@ -129,11 +136,19 @@ cMessage *ProcessingUnit::dequeueMessage(){
     cMessage *msg = this->message_queue.front();
     this->message_queue.pop();
 
+    Compute *compute_packet = dynamic_cast<Compute *>(msg);
+    double computing_size = compute_packet->getDnn_sublayer()->getComputingSize();
+    this->computing_queue_length -= computing_size;
+
     return msg;
 }
 
 bool ProcessingUnit::isBusy(){
     return this->can_compute_message->isScheduled();
+}
+
+double ProcessingUnit::getComputingQueueLength() {
+    return this->computing_queue_length;
 }
 
 void ProcessingUnit::socketDataArrived(UdpSocket *socket, Packet *packet) {}

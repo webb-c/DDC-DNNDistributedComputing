@@ -50,6 +50,8 @@ class ProcessingUnit : public ApplicationBase, public UdpSocket::ICallback
     double compute_time;
     queue<cMessage *> message_queue;
 
+    double computing_queue_length = 0;
+
     virtual int numInitStages() const override { return NUM_INIT_STAGES; }
     virtual void initialize(int stage) override;
     void init();
@@ -86,6 +88,7 @@ class ProcessingUnit : public ApplicationBase, public UdpSocket::ICallback
     virtual ~ProcessingUnit();
 
     bool isBusy();
+    double getComputingQueueLength();
 };
 
 } //namespace inet

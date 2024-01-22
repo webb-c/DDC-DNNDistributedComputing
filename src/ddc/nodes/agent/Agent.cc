@@ -200,8 +200,7 @@ void Agent::handleResponseArrivalRate(ResponseArrivalRate *response_arrival_rate
 
         string return_message = this->communicator.getPythonMessage();      // ACK
         if(return_message.compare(ACK) != 0){
-            EV << "error in reward " << return_message << endl;
-            return;
+            throw runtime_error("error in reward: " + return_message);
         }
 
         if (!this->wait_for_rl_message->isScheduled()) {

@@ -173,6 +173,8 @@ void Agent::handleRoute() {
 }
 
 void Agent::handleReward() {
+    this->agent_state[REWARD_STATE] = true;
+
     RequestArrivalRate *request_arrival_rate = returnRequestArrivalRateMesseage();
 
     addDummyPayloadToPacket(request_arrival_rate, 1);
@@ -192,17 +194,24 @@ RequestArrivalRate *Agent::returnRequestArrivalRateMesseage() {
 }
 
 void Agent::handleResponseArrivalRate(ResponseArrivalRate *response_arrival_rate) {
-    double arrival_rate = response_arrival_rate->getArrival_rate();
-    this->communicator.sendPythonMessage(to_string(arrival_rate));
+    if (this->agent_state[REWARD_STATE]) { // receive ResponseArrivalRate just one time.
+        double arrival_rate = response_arrival_rate->getArrival_rate();
+        this->communicator.sendPythonMessage(to_string(arrival_rate));
 
-    string return_message = this->communicator.getPythonMessage();      // ACK
-    if(return_message.compare(ACK) != 0){
-        EV << "error in reward " << return_message << endl;
-        return;
+        string return_message = this->communicator.getPythonMessage();      // ACK
+        if(return_message.compare(ACK) != 0){
+            EV << "error in reward " << return_message << endl;
+            return;
+        }
+
+        if (!this->wait_for_rl_message->isScheduled()) {
+            scheduleAt(simTime(), this->wait_for_rl_message);
+        }
+
+        this->agent_state[REWARD_STATE] = false;
     }
-
-    if (!this->wait_for_rl_message->isScheduled()) {
-        scheduleAt(simTime(), this->wait_for_rl_message);
+    else { // re-send message will be ignored.
+        return;
     }
 }
 

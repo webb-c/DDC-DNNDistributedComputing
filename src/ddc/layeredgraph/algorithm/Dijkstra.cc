@@ -43,7 +43,7 @@ namespace inet
 
 
         if (previous.size() == 0) {
-            throw runtime_error("previous is empty.");
+            throw runtime_error("Dijkstra.cc : previous is empty.");
         }
     
         return reconstructPath(previous, src_layer_node, dst_layer_node);

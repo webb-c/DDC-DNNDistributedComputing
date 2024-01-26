@@ -43,9 +43,19 @@ class LayeredGraph{
     map<LayerNode, ComputeDNN *> layer_node_application_table;
     map<LayerNode, vector<LayerNode>> adjacency_matrix;
     map<LayerNodePair, double> layered_graph;
-    map<string, bool> node_updated_indicator;
+    map<int, double> node_link_capacity_table;
+    map<int, double> node_compute_capacity_table;
+    map<string, bool> node_sync_indicator;
 
     AlgorithmBase *algorithm;
+
+    vector<int> link_job_nums;
+    vector<int> compute_job_nums;
+
+    double latest_update_time = 0.0;
+
+    map<LayerNodePair, cOutVector *> layer_node_virtual_queue_recorder_table;
+    map<string, cOutVector *> node_virtual_queue_recorder_table;
 
     // nodes
     void addNode();
@@ -60,10 +70,16 @@ class LayeredGraph{
     // layer_node_node_table
     void addLayerNodeNodeTable();
 
-    // lyaer_node_application_table
+    // layer_node_application_table
     void addLayerNodeApplicationTable();
 
-    void initNodeUpdatedIndicator();
+    // node_link_capacity_table, node_compute_capacity_table
+    void addNodeCapacityTable();
+
+    void initNodeSyncIndicator();
+
+    void updateLink(vector<int> &link_job_nums);
+    void updateCompute(vector<int> &compute_job_nums);
 
   public:
     LayeredGraph();
@@ -74,16 +90,19 @@ class LayeredGraph{
     void registerNode(cModule *node);
 
     void buildAdjacencyMatrix();
-    void update(NodeInformation node_information);
+    void sync(NodeInformation node_information);
+    void update();
     void initLayeredGraph();
 
-    void resetNodeUpdatedIndicator();
-    bool needUpdate();
+    void resetNodeSyncIndicator();
 
     vector<LayerNode> findPath(LayerNode src_layer_node, LayerNode dst_layer_node);
     double getArrivalRate(LayerNode src_layer_node, LayerNode dst_layer_node);
 
     void applyVirtualUpdate(vector<DNNSublayer> &dnn_sublayer_vector);
+
+    void initRecorder();
+    void recordVirtualQueue();
 };
 
 }

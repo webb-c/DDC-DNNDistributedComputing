@@ -18,6 +18,8 @@ simple ComputeDNN like IApp
 		int controlplane_port = default(5000);
 		string dest_addresses;
 		double virtual_queue_record_duration = default(0.1);
+		double bitrate @unit(bps);
+		double compute_capacity = default(20000000);
 		
     gates:
         input dataIn;

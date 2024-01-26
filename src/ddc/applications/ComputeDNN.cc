@@ -86,6 +86,8 @@ void ComputeDNN::parseParameters(){
     this->dest_port = par("dest_port").intValue();
     this->controlplane_port = par("controlplane_port").intValue();
     this->virtual_queue_record_duration = par("virtual_queue_record_duration").doubleValue();
+    this->bitrate = par("bitrate").doubleValue();
+    this->compute_capacity = par("compute_capacity");
 
     this->node_name = "node" + to_string(this->node_index);
 }
@@ -162,7 +164,7 @@ void ComputeDNN::initRecorder() {
 
     this->node_virtual_queue_recorder_table[this->node_name] = virtual_queue_recorder;
 
-    // init virtual queue recorder
+    // init physical queue recorder
     recorder_name = this->node_name;
     cOutVector *physical_queue_recorder = new cOutVector();
     physical_queue_recorder->setName(("3. node physical backlog: " + recorder_name).c_str());
@@ -362,7 +364,7 @@ void ComputeDNN::start() {
 }
 
 void ComputeDNN::recordQueue() {
-    recordVirtualQueue();
+    // recordVirtualQueue();
     recordPysicalQueue();
 }
 

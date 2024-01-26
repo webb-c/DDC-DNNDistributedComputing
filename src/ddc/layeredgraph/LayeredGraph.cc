@@ -14,7 +14,7 @@ namespace inet
         this->graph_depth = graph_depth;
         this->node_num = node_num;
         this->algorithm = algorithm;
-        resetNodeUpdatedIndicator();
+        resetNodeSyncIndicator();
     }
     
     ComputeDNN *LayeredGraph::returnComputeDNNApplication(cModule *node) {
@@ -29,6 +29,10 @@ namespace inet
         addLayerNodesFromNode();
         addLayerNodeNodeTable();
         addLayerNodeApplicationTable();
+        addNodeCapacityTable();
+
+        this->link_job_nums.push_back(0);
+        this->compute_job_nums.push_back(0);
     }
 
     // nodes
@@ -80,14 +84,23 @@ namespace inet
         }
     }
 
-    void LayeredGraph::initNodeUpdatedIndicator() {
-        resetNodeUpdatedIndicator();
+    void LayeredGraph::addNodeCapacityTable() {
+        int node_num = returnNodeNumberFromNode(this->node);
+
+        ComputeDNN *compute_dnn = returnComputeDNNApplication(this->node);
+
+        this->node_link_capacity_table[node_num] = compute_dnn->getBitrate();
+        this->node_compute_capacity_table[node_num] = compute_dnn->getComputeCapacity();
     }
 
-    void LayeredGraph::resetNodeUpdatedIndicator() {
+    void LayeredGraph::initNodeSyncIndicator() {
+        resetNodeSyncIndicator();
+    }
+
+    void LayeredGraph::resetNodeSyncIndicator() {
         for (int i = 1; i < this->node_num + 1; i++) {
             string node_name = "node" + to_string(i);
-            this->node_updated_indicator[node_name] = false;
+            this->node_sync_indicator[node_name] = false;
         }
     }
 
@@ -114,7 +127,32 @@ namespace inet
         this->layered_graph.clear();
     }
 
-    void LayeredGraph::update(NodeInformation node_information){
+    void LayeredGraph::initRecorder() {
+        // init virtual queue recorder of all layer nodes
+        for (const auto &pair : this->adjacency_matrix) {
+            LayerNode src = pair.first;
+            vector<LayerNode> adjacency = pair.second;
+
+            for (LayerNode &layer_node : adjacency) {
+                LayerNodePair virtual_link = LayerNodePair(src, layer_node);
+
+                cOutVector *layer_node_virtual_queue_recorder = new cOutVector();
+                layer_node_virtual_queue_recorder->setName(("2. layer node virtual backlog: " + virtual_link.toString()).c_str());
+
+                this->layer_node_virtual_queue_recorder_table[virtual_link] = layer_node_virtual_queue_recorder;
+
+                string recorder_name = virtual_link.getSrcLayerNode().toNodeName() + "->" + virtual_link.getDstLayerNode().toNodeName();
+                cOutVector *node_virtual_queue_recorder = new cOutVector();
+                node_virtual_queue_recorder->setName(("1. node virtual backlog: " + recorder_name).c_str());
+
+                if (this->node_virtual_queue_recorder_table.count(recorder_name) == 0) {
+                    this->node_virtual_queue_recorder_table[recorder_name] = node_virtual_queue_recorder;
+                }
+            }
+        }
+    }
+
+    void LayeredGraph::sync(NodeInformation node_information){
         string node_name = node_information.getNodeName();
         map<LayerNodePair, double> links_information = node_information.getLinksInformation();
 
@@ -124,16 +162,132 @@ namespace inet
             this->layered_graph[e.first] = links_information[e.first];
         }
 
-        this->node_updated_indicator[node_name] = true;
+        this->node_sync_indicator[node_name] = true;
     }
 
-    bool LayeredGraph::needUpdate() {
-        for (const auto &e : this->node_updated_indicator) {
-            if (this->node_updated_indicator[e.first] == false) {
-                return true;
+    void LayeredGraph::update() {
+        double current_update_time = simTime().dbl();
+
+        for (int i = 0; i < this->node_num; i++) {
+            this->link_job_nums[i] = 0;
+            this->compute_job_nums[i] = 0;
+        }
+
+        for (const auto &pair : this->layered_graph) {
+            LayerNodePair link = pair.first;
+            LayerNode src = link.getSrcLayerNode();
+            double link_backlog = pair.second;
+
+            if (link.isSameLayer() && link_backlog > 0) {
+                link_job_nums[src.getNodeNumber()]++;
+            }
+            else if (link.isSameNode() && link_backlog > 0) {
+                compute_job_nums[src.getNodeNumber()]++;
             }
         }
-        return false;
+
+        // updateLink(link_job_nums);
+        // updateCompute(compute_job_nums);
+
+        for (const auto &pair : this->node_link_capacity_table) {
+            int node_num = pair.first;
+            double link_capacity = pair.second;
+
+            int link_job_num = link_job_nums[node_num];
+
+            if (link_job_num == 0) {
+                continue;
+            }
+
+            double time_delta = (current_update_time - this->latest_update_time > 0) ? current_update_time - this->latest_update_time : 0;
+            double link_delta = (link_capacity / link_job_num) * time_delta;
+
+            for (const auto &pair : this->layered_graph) {
+                LayerNodePair link = pair.first;
+                LayerNode src = link.getSrcLayerNode();
+                double link_backlog = pair.second;
+
+                if (node_num == src.getNodeNumber() && link.isSameLayer()) {
+                    this->layered_graph[link] = (link_backlog - link_delta <= 0) ? 0 : link_backlog - link_delta;
+                }
+            }
+        }
+
+        for (const auto &pair : this->node_compute_capacity_table) {
+            int node_num = pair.first;
+            double compute_capacity = pair.second;
+
+            int compute_job_num = compute_job_nums[node_num];
+
+            if (compute_job_num == 0) {
+                continue;
+            }
+
+            double time_delta = (current_update_time - this->latest_update_time > 0) ? current_update_time - this->latest_update_time : 0;
+            double compute_delta = (compute_capacity / compute_job_num) * time_delta;
+
+            for (const auto &pair : this->layered_graph) {
+                LayerNodePair link = pair.first;
+                LayerNode src = link.getSrcLayerNode();
+                double compute_backlog = pair.second;
+
+                if (node_num == src.getNodeNumber() && link.isSameNode()) {
+                    this->layered_graph[link] = (compute_backlog - compute_delta <= 0) ? 0 : compute_backlog - compute_delta;
+                }
+            }
+        }
+
+        this->latest_update_time = current_update_time;
+    }
+
+    void LayeredGraph::updateLink(vector<int> &link_job_nums) {
+        for (const auto &pair : this->node_link_capacity_table) {
+            int node_num = pair.first;
+            double link_capacity = pair.second;
+
+            int link_job_num = link_job_nums[node_num];
+
+            if (link_job_num == 0) {
+                continue;
+            }
+
+            double link_delta = (link_capacity / link_job_num) * 0.1;
+
+            for (const auto &pair : this->layered_graph) {
+                LayerNodePair link = pair.first;
+                LayerNode src = link.getSrcLayerNode();
+                double link_backlog = pair.second;
+
+                if (node_num == src.getNodeNumber() && link.isSameLayer()) {
+                    this->layered_graph[link] = (link_backlog - link_delta <= 0) ? 0 : link_backlog - link_delta;
+                }
+            }
+        }
+    }
+
+    void LayeredGraph::updateCompute(vector<int> &compute_job_nums) {
+        for (const auto &pair : this->node_compute_capacity_table) {
+            int node_num = pair.first;
+            double compute_capacity = pair.second;
+
+            int compute_job_num = compute_job_nums[node_num];
+
+            if (compute_job_num == 0) {
+                continue;
+            }
+
+            double compute_delta = (compute_capacity / compute_job_num) * 0.1;
+
+            for (const auto &pair : this->layered_graph) {
+                LayerNodePair link = pair.first;
+                LayerNode src = link.getSrcLayerNode();
+                double compute_backlog = pair.second;
+
+                if (node_num == src.getNodeNumber() && link.isSameNode()) {
+                    this->layered_graph[link] = (compute_backlog - compute_delta <= 0) ? 0 : compute_backlog - compute_delta;
+                }
+            }
+        }
     }
 
     vector<LayerNode> LayeredGraph::findPath(LayerNode src_layer_node, LayerNode dst_layer_node) {
@@ -169,6 +323,34 @@ namespace inet
             }
             else if (dnn_sublayer.isLinkDNNSublayer()) {
                 this->layered_graph[link] += dnn_sublayer.getOutput().getLinkSize();
+            }
+        }
+    }
+
+
+    void LayeredGraph::recordVirtualQueue() {
+        if (this->layer_node_virtual_queue_recorder_table.size() == 0){
+            throw runtime_error("Please initialize virtual_queue_recorder_table first.");
+        }
+        else {
+            map<string, double> node_virtual_backlogs;
+
+            for (const auto &pair : this->layered_graph) {
+                LayerNodePair virtual_link = pair.first;
+                double layer_node_virtual_backlog = pair.second;
+
+                cOutVector *layer_node_virtual_queue_recorder = this->layer_node_virtual_queue_recorder_table[virtual_link];
+                layer_node_virtual_queue_recorder->record(layer_node_virtual_backlog);
+
+                node_virtual_backlogs[virtual_link.getSrcLayerNode().toNodeName() + "->" + virtual_link.getDstLayerNode().toNodeName()] += layer_node_virtual_backlog;
+            }
+
+            for (const auto &pair : node_virtual_backlogs) {
+                string node_virtual_link = pair.first;
+                double node_virtual_backlog = node_virtual_backlogs.at(node_virtual_link);
+
+                cOutVector *node_virtual_queue_recorder = this->node_virtual_queue_recorder_table[node_virtual_link];
+                node_virtual_queue_recorder->record(node_virtual_backlog);
             }
         }
     }

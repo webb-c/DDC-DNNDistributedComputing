@@ -77,7 +77,8 @@ class Controlplane : public ApplicationBase, public UdpSocket::ICallback
     bool requested_update = false;
     vector<cMessage *> job_queue;
 
-    cMessage *request_information_time_out = new cMessage("request_information_time_out");
+    double sync_message_duration = 1;
+    cMessage *virtual_queue_sync_message = new cMessage("virtual_queue_sync");
 
     virtual int numInitStages() const override { return NUM_INIT_STAGES; }
     virtual void initialize(int stage) override;
@@ -91,21 +92,24 @@ class Controlplane : public ApplicationBase, public UdpSocket::ICallback
     void loadAndinitLayeredGraph();
     void initLayeredGraph();
     void loadLayeredGraph();
-    void updateLayeredGraphVirtually(vector<DNNSublayerConfig *> dnn_sublayer_config_vector);
+    void initRecorder();
+    void updateLayeredGraph(vector<DNNSublayerConfig *> dnn_sublayer_config_vector);
 
     void handleMessageWhenUp(cMessage *msg) override;
 
-    void handleJobMessage(cMessage *msg);
     void handleRouteMessage(Route *msg);
     void handleArrivalRateMessage(RequestArrivalRate *request_arrival_rate);
     void doAllJobs();
     void handleNodeInformationMessage(Packet *response_node_information);
     void handleResetMessage();
     void handleStartMessage();
+    void handleVirtualQueueSyncMessage();
 
     DNNInformation *peekDNNInformationFromRoute(Route *msg);
     NodeInformation peekNodeInformationFromRoute(Packet *response_node_information);
     Schedule *returnScheduleMessage(DNNSublayerConfig *dnn_sublayer_config);
+
+    void UpdateandRecordVirtualQueue();
 
     void reset();
     void start();

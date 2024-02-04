@@ -17,6 +17,9 @@ namespace inet{
             {"model_1", root + "/../ddc/dnn/dnn_config/model_1.json"},
             {"model_2", root + "/../ddc/dnn/dnn_config/model_2.json"},
             {"model_3", root + "/../ddc/dnn/dnn_config/model_3.json"},
+            {"SLN", root + "/../ddc/dnn/dnn_config/SLN.json"},
+            {"ELN", root + "/../ddc/dnn/dnn_config/ELN.json"},
+            {"YOLO", root + "/../ddc/dnn/dnn_config/YOLO.json"},
           };
     }
 

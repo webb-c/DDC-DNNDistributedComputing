@@ -1,4 +1,5 @@
 simulations/ini/results
+simulations/ini/*.anf
 out
 src/*.exe
 Makefile

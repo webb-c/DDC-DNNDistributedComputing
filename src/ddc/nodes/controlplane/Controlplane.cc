@@ -33,6 +33,9 @@ void Controlplane::init() {
     parseAddress();
     initDataplane();
     loadAndinitLayeredGraph();
+
+    scheduleAt(simTime(), this->virtual_queue_sync_message);
+    this->layered_graph.initRecorder();
 }
 
 void Controlplane::parseAddress(){
@@ -103,11 +106,11 @@ void Controlplane::initLayeredGraph(){
         this->layered_graph.registerNode(node);
     }
 
-    // initÀº ºñÇö½ÇÀûÀÌ±ä ÇÏÁö¸¸ Á÷Á¢ Á¢±ÙÇØ¼­ ÃÊ±âÈ­
+    // initï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ø¼ï¿½ ï¿½Ê±ï¿½È­
     this->layered_graph.buildAdjacencyMatrix();
 }
 
-void Controlplane::updateLayeredGraphVirtually(vector<DNNSublayerConfig *> dnn_sublayer_config_vector) {
+void Controlplane::updateLayeredGraph(vector<DNNSublayerConfig *> dnn_sublayer_config_vector) {
     vector<DNNSublayer> dnn_sublayer_vector;
     for (const DNNSublayerConfig * dnn_sublayer_config : dnn_sublayer_config_vector) {
         DNNSublayer dnn_sublayer = this->dnn_sublayer_factory.makeDNNSublayer(*dnn_sublayer_config);
@@ -118,14 +121,21 @@ void Controlplane::updateLayeredGraphVirtually(vector<DNNSublayerConfig *> dnn_s
 }
 
 void Controlplane::handleMessageWhenUp(cMessage *msg) {
-    if (strcmp(msg->getFullName(), "route") == 0 || strcmp(msg->getFullName(), "request_arrival_rate") == 0) {
-        // message from Agent
-        handleJobMessage(msg);
+    if (strcmp(msg->getFullName(), "route") == 0) {
+        Route *route = dynamic_cast<Route *>(msg);
+        handleRouteMessage(route);
+        delete msg;
+    }
+    else if (strcmp(msg->getFullName(), "request_arrival_rate") == 0) {
+        RequestArrivalRate *request_arrival_rate = dynamic_cast<RequestArrivalRate *>(msg);
+        handleArrivalRateMessage(request_arrival_rate);
+        delete msg;
     }
     else if (strcmp(msg->getFullName(), "response_node_information") == 0) {
         // message from DNNCompute
         Packet *response_node_information = dynamic_cast<Packet *>(msg);
         handleNodeInformationMessage(response_node_information);
+        delete msg;
     }
     else if (strcmp(msg->getFullName(), "reset") == 0) {
         handleResetMessage();
@@ -135,19 +145,14 @@ void Controlplane::handleMessageWhenUp(cMessage *msg) {
         handleStartMessage();
         delete msg;
     }
-}
-
-void Controlplane::handleJobMessage(cMessage *msg) {
-    this->job_queue.push_back(msg);
-    if (!this->requested_update) {
-        this->layered_graph.initLayeredGraph();
-        this->layered_graph.resetNodeUpdatedIndicator();
-        this->requested_update = true;
-        sendReqeustInformationMessageToNodes();
+    else if (strcmp(msg->getFullName(), "virtual_queue_sync") == 0) {
+        handleVirtualQueueSyncMessage();
     }
 }
 
 void Controlplane::handleRouteMessage(Route *msg) {
+    UpdateandRecordVirtualQueue();
+
     DNNInformation *dnn_information = peekDNNInformationFromRoute(msg);
 
     LayerNode src_layer_node = dnn_information->getSrcLayerNode();
@@ -158,7 +163,7 @@ void Controlplane::handleRouteMessage(Route *msg) {
 
     vector<DNNSublayerConfig *> dnn_sublayer_config_vector = this->dnn_sublayer_config_factory.makeDNNSublayerConfigVector(dnn_information, layer_node_pair_path);
 
-    updateLayeredGraphVirtually(dnn_sublayer_config_vector);
+    updateLayeredGraph(dnn_sublayer_config_vector);
 
     for (DNNSublayerConfig *dnn_sublayer_config : dnn_sublayer_config_vector) {
         Schedule *schedule = returnScheduleMessage(dnn_sublayer_config);
@@ -180,38 +185,10 @@ Schedule *Controlplane::returnScheduleMessage(DNNSublayerConfig *dnn_sublayer_co
     return schedule;
 }
 
-void Controlplane::doAllJobs() {
-    for (int i = 0; i < this->job_queue.size(); i++) {
-        cMessage *msg = this->job_queue[i];
-
-        if (strcmp(msg->getFullName(), "route") == 0) {
-            Route *route = dynamic_cast<Route *>(msg);
-            handleRouteMessage(route);
-        }
-        else if (strcmp(msg->getFullName(), "request_arrival_rate") == 0) {
-            RequestArrivalRate *request_arrival_rate = dynamic_cast<RequestArrivalRate *>(msg);
-            handleArrivalRateMessage(request_arrival_rate);
-        }
-    }
-
-    // destroy msgs.
-    while(!this->job_queue.empty()) {
-        delete this->job_queue.back();
-        this->job_queue.pop_back();
-    }
-}
-
 void Controlplane::handleNodeInformationMessage(Packet *response_node_information) {
     NodeInformation node_information = peekNodeInformationFromRoute(response_node_information);
 
-    this->layered_graph.update(node_information);
-
-    if (!this->layered_graph.needUpdate()) { // layered_graph completely updated
-        this->requested_update = false;
-        doAllJobs();
-    }
-
-    delete response_node_information;
+    this->layered_graph.sync(node_information);
 }
 
 DNNInformation *Controlplane::peekDNNInformationFromRoute(Route *msg){
@@ -239,6 +216,8 @@ NodeInformation Controlplane::peekNodeInformationFromRoute(Packet *response_node
 }
 
 void Controlplane::handleArrivalRateMessage(RequestArrivalRate *request_arrival_rate) {
+    UpdateandRecordVirtualQueue();
+
     LayerNode src_layer_node = request_arrival_rate->getSrc_layer_node();
     LayerNode dst_layer_node = request_arrival_rate->getDst_layer_node();
     string response_agent_name = request_arrival_rate->getAgent_name();
@@ -274,6 +253,18 @@ void Controlplane::start() {
     EV << "start control plane";
     sendStartMessageToNodes();
     this->is_reset = false;
+}
+
+void Controlplane::handleVirtualQueueSyncMessage() {
+    this->layered_graph.resetNodeSyncIndicator();
+    sendReqeustInformationMessageToNodes();
+
+    scheduleAt(simTime() + this->sync_message_duration, this->virtual_queue_sync_message);
+}
+
+void Controlplane::UpdateandRecordVirtualQueue() {
+    this->layered_graph.update();
+    this->layered_graph.recordVirtualQueue();
 }
 
 void Controlplane::sendResetMessageToNodes() {

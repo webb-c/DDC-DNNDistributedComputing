@@ -70,7 +70,9 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
     int local_port; // Local port
     int dest_port;  // Destination port
     int controlplane_port;
-    std::vector<L3Address> dest_addresses; // Destination address
+    double bitrate;
+    double compute_capacity;
+    vector<L3Address> dest_addresses; // Destination address
     vector<string> dest_addresses_str;
     double virtual_queue_record_duration;
 
@@ -153,6 +155,8 @@ class ComputeDNN : public ApplicationBase, public TcpSocket::ICallback
 
     double getQueueLengthByLayerNodePair(LayerNodePair link);
 
+    double getBitrate() { return this->bitrate; }
+    double getComputeCapacity() { return this->compute_capacity; }
     string getNodeName() { return this->node_name; }
     vector<LayerNodePair> getLinks() { return this->virtual_links; }
 };

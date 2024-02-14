@@ -17,7 +17,7 @@ package simulations.networks;
 
 import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.node.contract.INetworkNode;
-import inet.physicallayer.wireless.common.contract.packe tlevel.IRadioMedium;
+import inet.physicallayer.wireless.common.contract.packetlevel.IRadioMedium;
 import inet.visualizer.contract.IIntegratedVisualizer;
 
 network Wireless_6nodes

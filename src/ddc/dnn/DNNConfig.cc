@@ -9,10 +9,11 @@
 
 namespace inet{
 
-    DNNConfig::DNNConfig() : DNNConfig::DNNConfig(createDefaultJson()){}
+    DNNConfig::DNNConfig() : DNNConfig::DNNConfig(createDefaultJson(), 1.0){}
 
-    DNNConfig::DNNConfig(json json_config){
+    DNNConfig::DNNConfig(json json_config, double input_size){
         this->name = json_config["name"];
+        this->input_size = input_size;
         this->sublayer_num = json_config["sublayer_num"];
         this->link_and_computing_config = json_config["config"];
         this->link_config_vector = this->link_and_computing_config[LINK_INDEX];
@@ -28,11 +29,11 @@ namespace inet{
     }
 
     double DNNConfig::getLinkByLayerIndex(int layer_index){
-        return this->link_config_vector[layer_index];
+        return this->input_size * this->link_config_vector[layer_index];
     }
 
     double DNNConfig::getComputingByLayerIndex(int layer_index){
-        return this->computing_config_vector[layer_index];
+        return this->input_size * this->computing_config_vector[layer_index];
     }
 
 }

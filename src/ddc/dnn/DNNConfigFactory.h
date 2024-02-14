@@ -38,13 +38,13 @@ class DNNConfigFactory
     void loadPathFromModelName(string dnn_model_name);
     void loadJsonString();
     void loadJson();
-    void buildDNNConfig();
+    void buildDNNConfig(double input_size);
     string exePath();
 
   public:
     DNNConfigFactory();
 
-    DNNConfig makeDNNConfig(string dnn_model_name);
+    DNNConfig makeDNNConfig(string dnn_model_name, double input_size);
 };
 
 }

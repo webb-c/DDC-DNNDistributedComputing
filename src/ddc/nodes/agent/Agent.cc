@@ -74,6 +74,7 @@ void Agent::parseParameters() {
     this->dst_node_name = par("dst_node_name").stdstringValue();
     this->model_name = par("model_name").stdstringValue();
     this->agent_name = par("agent_name").stdstringValue();
+    this->input_size = par("input_size").doubleValue();
 }
 
 void Agent::initCommunicator() {
@@ -81,7 +82,7 @@ void Agent::initCommunicator() {
 }
 
 void Agent::initSrcDstLayerNode() {
-    DNNConfig dnn_config = dnn_config_factory.makeDNNConfig(this->model_name);
+    DNNConfig dnn_config = dnn_config_factory.makeDNNConfig(this->model_name, this->input_size);
     int sublayer_num = dnn_config.getSublayerNum();
 
     this->src_layer_node_index = returnNodeNumberFromNodeName(this->src_node_name);
@@ -161,7 +162,7 @@ void Agent::handleAction() {
 void Agent::handleRoute() {
     double start_simulation_time = simTime().dbl();
 
-    DNNID dnn_id = DNNID(this->model_name, this->agent_name, start_simulation_time, simTime().dbl());
+    DNNID dnn_id = DNNID(this->model_name, this->agent_name, this->input_size, start_simulation_time, simTime().dbl());
     DNNInformation *dnn_information = new DNNInformation(dnn_id, this->src_layer_node, this->dst_layer_node);
 
     Route *route = returnRouteMessage(dnn_information);

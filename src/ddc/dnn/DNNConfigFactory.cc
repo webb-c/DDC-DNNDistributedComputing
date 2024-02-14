@@ -23,11 +23,11 @@ namespace inet{
           };
     }
 
-    DNNConfig DNNConfigFactory::makeDNNConfig(string dnn_model_name){
+    DNNConfig DNNConfigFactory::makeDNNConfig(string dnn_model_name, double input_size){
         loadPathFromModelName(dnn_model_name);
         loadJsonString();
         loadJson();
-        buildDNNConfig();
+        buildDNNConfig(input_size);
 
         return this->dnn_config;
     }
@@ -50,8 +50,8 @@ namespace inet{
         this->dnn_config_json = json::parse(this->dnn_config_json_string);
     }
 
-    void DNNConfigFactory::buildDNNConfig(){
-        this->dnn_config = DNNConfig(this->dnn_config_json);
+    void DNNConfigFactory::buildDNNConfig(double input_size){
+        this->dnn_config = DNNConfig(this->dnn_config_json, input_size);
     }
 
     string DNNConfigFactory::exePath() {

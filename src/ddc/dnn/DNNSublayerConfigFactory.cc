@@ -19,6 +19,7 @@ namespace inet{
         resetDNNSublayerConfigVector();
 
         string model_name = dnn_information->getDNNID().getDNNModelName();
+        double input_size = dnn_information->getDNNID().getInputSize();
         int sublayer_index = 0;
         DNNID dnn_id = dnn_information->getDNNID();
 
@@ -35,11 +36,11 @@ namespace inet{
             }
 
             if (layer_node_pair.isSameLayer() && !layer_node_pair.isSameNode()) { // need computing = false
-                DNNSublayerConfig *dnn_sublayer_config = new DNNSublayerConfig(model_name, sublayer_index, false, dnn_id, computing_layer_node, next_computing_layer_node);
+                DNNSublayerConfig *dnn_sublayer_config = new DNNSublayerConfig(model_name, input_size, sublayer_index, false, dnn_id, computing_layer_node, next_computing_layer_node);
                 this->dnn_sublayer_config_vector.push_back(dnn_sublayer_config);
             }
             else if (layer_node_pair.isSameNode() && !layer_node_pair.isSameLayer()) { // need computing = true
-                DNNSublayerConfig *dnn_sublayer_config = new DNNSublayerConfig(model_name, sublayer_index, true, dnn_id, computing_layer_node, next_computing_layer_node);
+                DNNSublayerConfig *dnn_sublayer_config = new DNNSublayerConfig(model_name, input_size, sublayer_index, true, dnn_id, computing_layer_node, next_computing_layer_node);
                 this->dnn_sublayer_config_vector.push_back(dnn_sublayer_config);
             }
 

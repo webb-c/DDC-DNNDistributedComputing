@@ -26,6 +26,7 @@ class DNNConfig
 {
   private:
     string name;
+    double input_size;
     int sublayer_num;
     vector<vector<double>> link_and_computing_config;
     vector<double> link_config_vector;
@@ -33,7 +34,7 @@ class DNNConfig
 
   public:
     DNNConfig();
-    DNNConfig(json json_config);
+    DNNConfig(json json_config, double input_size);
     
     string getName() { return this->name; }
     int getSublayerNum() { return this->sublayer_num; }

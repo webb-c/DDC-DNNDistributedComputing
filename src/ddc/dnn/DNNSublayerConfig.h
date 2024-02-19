@@ -24,6 +24,7 @@ class DNNSublayerConfig
 {
   private:
     string model_name;
+    double input_size;
     int sublayer_index;
     bool need_computing;
     DNNID dnn_id;
@@ -34,8 +35,8 @@ class DNNSublayerConfig
 
   public:
     DNNSublayerConfig();
-    DNNSublayerConfig(std::string model_name, int sublayer_index, bool need_computing, DNNID dnn_id, LayerNode computing_layer_node, LayerNode next_computing_layer_node);
-
+    DNNSublayerConfig(std::string model_name, double input_size, int sublayer_index, bool need_computing, DNNID dnn_id, LayerNode computing_layer_node, LayerNode next_computing_layer_node);
+    double getInputSize() { return this->input_size; }
     std::string getModelName() { return this->model_name; }
     int getSublayerIndex() { return this->sublayer_index; }
     bool getNeedComputing() { return this->need_computing; }

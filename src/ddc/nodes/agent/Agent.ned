@@ -16,12 +16,13 @@ simple Agent like IApp
         int layer_depth;
         int local_port = default(5001);
         int dest_port = default(5000);
-        string pipe_name = default("\\\\.\\pipe\\frame_drop_rl_1");
+        string pipe_name = default("\\\\.\\pipe\\frame_drop_rl");
         double skip_length;
         string src_node_name;
         string dst_node_name;
         string model_name;
         string agent_name;
+        double input_size;
      
     gates:
         input socketIn @labels(UdpControlInfo/up);

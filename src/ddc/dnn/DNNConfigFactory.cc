@@ -17,14 +17,17 @@ namespace inet{
             {"model_1", root + "/../ddc/dnn/dnn_config/model_1.json"},
             {"model_2", root + "/../ddc/dnn/dnn_config/model_2.json"},
             {"model_3", root + "/../ddc/dnn/dnn_config/model_3.json"},
+            {"SLN", root + "/../ddc/dnn/dnn_config/SLN.json"},
+            {"ELN", root + "/../ddc/dnn/dnn_config/ELN.json"},
+            {"YOLO", root + "/../ddc/dnn/dnn_config/YOLO.json"},
           };
     }
 
-    DNNConfig DNNConfigFactory::makeDNNConfig(string dnn_model_name){
+    DNNConfig DNNConfigFactory::makeDNNConfig(string dnn_model_name, double input_size){
         loadPathFromModelName(dnn_model_name);
         loadJsonString();
         loadJson();
-        buildDNNConfig();
+        buildDNNConfig(input_size);
 
         return this->dnn_config;
     }
@@ -47,8 +50,8 @@ namespace inet{
         this->dnn_config_json = json::parse(this->dnn_config_json_string);
     }
 
-    void DNNConfigFactory::buildDNNConfig(){
-        this->dnn_config = DNNConfig(this->dnn_config_json);
+    void DNNConfigFactory::buildDNNConfig(double input_size){
+        this->dnn_config = DNNConfig(this->dnn_config_json, input_size);
     }
 
     string DNNConfigFactory::exePath() {

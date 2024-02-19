@@ -75,6 +75,7 @@ class Agent : public ApplicationBase, public UdpSocket::ICallback
     LayerNode dst_layer_node;
     int src_layer_node_index;
     int dst_layer_node_index;
+    double input_size;
     string model_name;
     string agent_name;
     string node_name;

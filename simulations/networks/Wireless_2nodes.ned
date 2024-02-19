@@ -20,7 +20,7 @@ import inet.node.contract.INetworkNode;
 import inet.physicallayer.wireless.common.contract.packetlevel.IRadioMedium;
 import inet.visualizer.contract.IIntegratedVisualizer;
 
-network Wireless_6nodes
+network Wireless_2nodes
 {
     submodules:
         visualizer: <default(firstAvailableOrEmpty("IntegratedCanvasVisualizer"))> like IIntegratedVisualizer if typename != "" {
@@ -33,25 +33,13 @@ network Wireless_6nodes
             @display("p=50,150");
         }
         node1: <default("AdhocHost")> like INetworkNode {
-            @display("p=700,100");
+            @display("p=459,40");
         }
         node2: <default("AdhocHost")> like INetworkNode {
-            @display("p=1300,100");
-        }
-        node3: <default("AdhocHost")> like INetworkNode {
-            @display("p=600,300");
-        }
-        node4: <default("AdhocHost")> like INetworkNode {
-            @display("p=1000,300");
-        }
-        node5: <default("AdhocHost")> like INetworkNode {
-            @display("p=1400,300");
-        }
-        node6: <default("AdhocHost")> like INetworkNode {
-            @display("p=1000,700");
+            @display("p=500,324");
         }
         controlplane: <default("AdhocHost")> like INetworkNode {
-            @display("p=400,200");
+            @display("p=290,222");
         }
-        
+
 }

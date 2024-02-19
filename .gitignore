@@ -1,4 +1,6 @@
 simulations/ini/results
+simulations/ini/*.anf
 out
 src/*.exe
 Makefile
+.settings/language.settings.xml

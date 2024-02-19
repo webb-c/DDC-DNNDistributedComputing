@@ -21,6 +21,7 @@ namespace inet{
     }
 
     void DNNSublayerFactory::unzipDNNSublayerConfig(DNNSublayerConfig dnn_sublayer_config){
+        this->input_size = dnn_sublayer_config.getInputSize();
         this->model_name = dnn_sublayer_config.getModelName();
         this->sublayer_index = dnn_sublayer_config.getSublayerIndex();
         this->need_computing = dnn_sublayer_config.getNeedComputing();
@@ -32,7 +33,7 @@ namespace inet{
     }
 
     void DNNSublayerFactory::includeDNNConfig(){
-        this->dnn_config = this->dnn_config_factory.makeDNNConfig(this->model_name);
+        this->dnn_config = this->dnn_config_factory.makeDNNConfig(this->model_name, this->input_size);
     }
 
     void DNNSublayerFactory::loadLinkAndComputing(){

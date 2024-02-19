@@ -25,6 +25,7 @@ class DNNSublayerFactory
     DNNConfigFactory dnn_config_factory;
 
     string model_name;
+    double input_size;
     int sublayer_index;
     bool need_computing;
     DNNID dnn_id;

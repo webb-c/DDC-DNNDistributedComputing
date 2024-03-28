@@ -192,6 +192,7 @@ void ComputeDNN::initTcpSockets() {
 }
 
 void ComputeDNN::handleMessageWhenUp(cMessage *msg) {
+
     if (strcmp(msg->getFullName(), "schedule") == 0) {
         // message from ControlPlane
         Schedule *schedule = dynamic_cast<Schedule *>(msg);
@@ -232,7 +233,32 @@ void ComputeDNN::handleMessageWhenUp(cMessage *msg) {
         }
         else {
 //            throw cRuntimeError("Unknown incoming message: '%s'", msg->getName());
-            throw runtime_error(string("Unknown incoming message:") +  msg->getName());
+            /*bool is_self_msg = msg->isSelfMessage();
+            bool is_scheduled = msg->isScheduled();
+            string sender_module_name = msg->getSenderModule()->getFullName();
+            string sender_gate = msg->getSenderGate()->getFullName();
+            string arrival_module = msg->getArrivalModule()->getFullName();
+            string arrival_gate = msg->getArrivalGate()->getFullName();int sender_module_id = msg->getSenderModuleId();
+            int sender_gate_id = msg->getSenderGateId();
+            int arrival_module_id = msg->getArrivalModuleId();
+            int arrival_gate_id = msg->getArrivalGateId();
+            long id = msg->getId();
+            // Assuming you would have handled exceptions elsewhere if msg->getName() is needed
+            // throw runtime_error(string("Unknown incoming message:") +  msg->getName());
+
+            string log_message = "is_self_msg: " + to_string(is_self_msg);
+            log_message += ", is_scheduled: " + to_string(is_scheduled);
+            log_message += ", sender_module_name: " + sender_module_name;
+            log_message += ", sender_gate: " + sender_gate;
+            log_message += ", arrival_module: " + arrival_module;
+            log_message += ", arrival_gate: " + arrival_gate;
+            log_message += ", sender_module_id: " + to_string(sender_module_id);
+            log_message += ", sender_gate_id: " + to_string(sender_gate_id);
+            log_message += ", arrival_module_id: " + to_string(arrival_module_id);
+            log_message += ", arrival_gate_id: " + to_string(arrival_gate_id);
+            log_message += ", id: " + to_string(id);*/
+
+            // throw runtime_error(string("Unknown incoming message:") +  log_message);
             delete msg;
         }
     }

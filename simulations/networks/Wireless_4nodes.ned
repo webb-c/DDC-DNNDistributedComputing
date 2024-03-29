@@ -20,7 +20,12 @@ import inet.node.contract.INetworkNode;
 import inet.physicallayer.wireless.common.contract.packetlevel.IRadioMedium;
 import inet.visualizer.contract.IIntegratedVisualizer;
 
-network Wireless_2nodes
+import inet.node.inet.StandardHost;
+import inet.node.ethernet.EthernetLink;
+import inet.node.ethernet.Eth1G;
+
+
+network Wireless_4nodes
 {
     submodules:
         visualizer: <default(firstAvailableOrEmpty("IntegratedCanvasVisualizer"))> like IIntegratedVisualizer if typename != "" {
@@ -33,13 +38,23 @@ network Wireless_2nodes
             @display("p=50,150");
         }
         node1: <default("AdhocHost")> like INetworkNode {
-            @display("p=459,40");
+            @display("p=453,280");
         }
-        node2: <default("AdhocHost")> like INetworkNode {
-            @display("p=500,324");
+        node2: StandardHost {
+            @display("p=802,167");
         }
-        controlplane: <default("AdhocHost")> like INetworkNode {
-            @display("p=290,222");
+        node3: StandardHost {
+            @display("p=774,391");
         }
+        node4: StandardHost {
+            @display("p=1202,222");
+        }
+        controlplane: StandardHost {
+            @display("p=724,37");
+        }
+
+    connections allowunconnected:
+        node2.ethg++ <--> Eth1G <--> node4.ethg++;
+        node3.ethg++ <--> Eth1G <--> node4.ethg++;
 
 }

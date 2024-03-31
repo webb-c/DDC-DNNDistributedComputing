@@ -37,7 +37,10 @@ network Wireless_4nodes
         radioMedium: <default("UnitDiskRadioMedium")> like IRadioMedium {
             @display("p=50,150");
         }
-        node1: <default("AdhocHost")> like INetworkNode {
+        // node1: <default("AdhocHost")> like INetworkNode {
+        //    @display("p=453,280");
+        // }
+        node1: StandardHost {
             @display("p=453,280");
         }
         node2: StandardHost {
@@ -54,7 +57,14 @@ network Wireless_4nodes
         }
 
     connections allowunconnected:
+        node1.ethg++ <--> Eth1G <--> node2.ethg++;
+        node1.ethg++ <--> Eth1G <--> node3.ethg++;
         node2.ethg++ <--> Eth1G <--> node4.ethg++;
         node3.ethg++ <--> Eth1G <--> node4.ethg++;
+        
+        node1.ethg++ <--> Eth1G <--> controlplane.ethg++;
+        node2.ethg++ <--> Eth1G <--> controlplane.ethg++;
+        node3.ethg++ <--> Eth1G <--> controlplane.ethg++;
+        node4.ethg++ <--> Eth1G <--> controlplane.ethg++;
 
 }

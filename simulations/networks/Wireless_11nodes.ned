@@ -33,9 +33,9 @@ network Wireless_11nodes
         {
             datarate = 200Mbps;
         }
-        channel Eth300M extends EthernetLink
+        channel Eth500M extends EthernetLink
         {
-            datarate = 200Mbps;
+            datarate = 500Mbps;
         }
         
     submodules:

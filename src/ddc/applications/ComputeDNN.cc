@@ -173,7 +173,7 @@ void ComputeDNN::initRecorder() {
 
     // init ene to end latency recorder
     this->end_to_end_latency_recorder = new cOutVector();
-    this->end_to_end_latency_recorder->setName(this->node_name.c_str());
+    this->end_to_end_latency_recorder->setName(("latency: " + this->node_name).c_str());
 }
 
 void ComputeDNN::initProcessingUnit() {

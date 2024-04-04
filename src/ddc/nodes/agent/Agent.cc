@@ -99,6 +99,7 @@ void Agent::initNodeName() {
 void Agent::initVariable() {
     this->dnn_identifier = 0;
     this->wait_for_rl_message = new cMessage("wait_for_RL");
+    this->terminal_message = new cMessage("terminal");
 }
 
 void Agent::handleMessageWhenUp(cMessage *msg) {
@@ -116,6 +117,12 @@ void Agent::handleMessageWhenUp(cMessage *msg) {
         else if (python_msg.compare(FINISH) == 0) {
             handleFinish();
         }
+        else if (python_msg.compare(TERMINAL) == 0) {
+            handleTerminal();
+        }
+    }
+    else if (strcmp(msg->getName(), "terminal") == 0) {
+        endSimulation();
     }
     else if (strcmp(msg->getName(), "reset") == 0) {
         handleReset();
@@ -218,6 +225,18 @@ void Agent::handleResponseArrivalRate(ResponseArrivalRate *response_arrival_rate
 void Agent::handleFinish() {
     scheduleAt(simTime(), new cMessage("reset"));
     scheduleAt(simTime() + this->skip_length - 10, new cMessage("start"));
+}
+
+void Agent::handleTerminal() {
+    // reset
+    Packet* reset_message = new Packet("reset");
+    addDummyPayloadToPacket(reset_message, 1);
+
+    sendMessageToControlPlane(reset_message);
+
+    this->dnn_identifier = 0;
+
+    scheduleAt(simTime() + 10000.0, this->terminal_message);
 }
 
 void Agent::handleReset() {

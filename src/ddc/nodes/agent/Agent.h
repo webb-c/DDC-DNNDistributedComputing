@@ -45,6 +45,7 @@ namespace inet {
 string ACTION("action");
 string REWARD("reward");
 string FINISH("finish");
+string TERMINAL("terminal");
 string ACK("ACK");
 
 class Agent : public ApplicationBase, public UdpSocket::ICallback
@@ -54,6 +55,7 @@ class Agent : public ApplicationBase, public UdpSocket::ICallback
     bool agent_state[3] = {false};
 
     cMessage* wait_for_rl_message;
+    cMessage* terminal_message;
 
     UdpSocket socket;
     int local_port = -1; // Local port
@@ -106,6 +108,7 @@ class Agent : public ApplicationBase, public UdpSocket::ICallback
     void handleRoute();
     void handleReward();
     void handleFinish();
+    void handleTerminal();
     void handleReset();
     void handleStart();
     void handleResponseArrivalRate(ResponseArrivalRate *response_arrival_rate);
